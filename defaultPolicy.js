@@ -1,0 +1,25 @@
+export const DEFAULT_POLICY = {
+  enabled: true,
+  policyPack: "corporate",
+  riskBlockThreshold: 70,
+  riskAutoRedactThreshold: 30,
+  allowlistDomains: [],
+  denyDomains: [],
+  enforceOnlyOnDomains: [],
+  strictModeDomains: [
+    "chatgpt.com",
+    "chat.openai.com",
+    "gemini.google.com",
+    "claude.ai",
+    "copilot.microsoft.com",
+    "perplexity.ai",
+  ],
+  denyOverridesForSecrets: true,
+  clipboardProtection: true,
+  localOnlyMode: true,
+  holdToConfirmMs: 2000,
+  proxyChain: [],
+  proxyChainEnabled: false,
+  enabledDetectors: [],
+};
+

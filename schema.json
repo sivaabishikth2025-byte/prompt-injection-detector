@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "tenantId": { "type": "string" },
+    "policyVersion": { "type": "string" },
+    "telemetryMode": {
+      "type": "string",
+      "enum": ["OFF", "METADATA_ONLY"]
+    },
+    "overrideMode": {
+      "type": "string",
+      "enum": ["ALLOW_STRICTER_ONLY", "ALLOW_USER_ADD_ONLY"]
+    },
+    "lockedKeys": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "denyDomains": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "allowlistDomains": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "enforceOnlyOnDomains": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "requiredDetectors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "minThresholds": {
+      "type": "object",
+      "properties": {
+        "riskAutoRedactThreshold": { "type": "number" },
+        "riskBlockThreshold": { "type": "number" },
+        "holdToConfirmMs": { "type": "number" }
+      }
+    },
+    "maxThresholds": {
+      "type": "object",
+      "properties": {
+        "riskAutoRedactThreshold": { "type": "number" },
+        "riskBlockThreshold": { "type": "number" },
+        "holdToConfirmMs": { "type": "number" }
+      }
+    }
+  }
+}
+

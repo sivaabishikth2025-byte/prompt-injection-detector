@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Prompt Injection Detector — Options</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .tab-bar { display:flex; flex-wrap:wrap; gap:4px; border-bottom:2px solid rgba(148, 163, 184, 0.35); margin-bottom:20px; }
+    .tab-btn { padding:8px 16px; border:0; background:transparent; cursor:pointer; font-weight:600; font-size:13px; color:#94a3b8; border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .15s, border-color .15s; }
+    .tab-btn.active { color:#e5e7eb; border-bottom-color:#22d3ee; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .proxy-hop { background:#0b1220; border:1px solid rgba(148, 163, 184, 0.35); border-radius:10px; padding:12px; margin-bottom:10px; position:relative; }
+    .proxy-hop-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-weight:600; font-size:13px; }
+    .hop-remove { border:0; background:rgba(239, 68, 68, 0.25); color:#fecaca; border-radius:6px; padding:3px 8px; cursor:pointer; font-size:11px; }
+    .hop-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .hop-grid-full { grid-column: 1 / -1; }
+    .hop-status { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+    .hop-ok   { background:rgba(16, 185, 129, 0.24); color:#bbf7d0; }
+    .hop-fail { background:rgba(239, 68, 68, 0.25); color:#fecaca; }
+    .hop-pend { background:rgba(2, 132, 199, 0.25); color:#e0f2fe; }
+    .vault-item { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:rgba(15, 23, 42, 0.45); border:1px solid rgba(148, 163, 184, 0.25); border-radius:8px; margin-bottom:6px; font-size:12px; }
+    .risk-bar-wrap { background:rgba(148, 163, 184, 0.25); border-radius:999px; height:6px; margin-top:4px; }
+    .risk-bar { height:6px; border-radius:999px; background:#22d3ee; }
+    code { background:rgba(15, 23, 42, 0.65); padding:1px 6px; border-radius:6px; border:1px solid rgba(148, 163, 184, 0.25); }
+  </style>
+</head>
+<body class="options-body">
+  <main class="options-shell">
+    <header class="panel-head">
+      <div>
+        <div class="title">🛡️ Prompt Injection Detector</div>
+        <div class="subtitle"><span id="pf-version">v?</span> — Options</div>
+      </div>
+    </header>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="policy">Policy</button>
+      <button class="tab-btn" data-tab="proxy">Proxy Chain</button>
+      <button class="tab-btn" data-tab="vault">Data Vault</button>
+      <button class="tab-btn" data-tab="audit">Audit &amp; Export</button>
+      <button class="tab-btn" data-tab="enterprise">Enterprise Policy</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-policy">
+      <section class="card">
+        <h2>Protection</h2>
+        <div class="grid two">
+          <label class="inline">
+            <input type="checkbox" id="enabled"/>
+            <span>Enabled</span>
+          </label>
+          <label>
+            <span>Policy pack</span>
+            <select id="policy-pack">
+              <option value="corporate">Corporate</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="legal">Legal</option>
+              <option value="student">Student</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Risk thresholds</h2>
+        <div class="grid two">
+          <label>
+            <span>Auto-redact threshold</span>
+            <input type="number" id="auto-threshold" min="1" max="99"/>
+          </label>
+          <label>
+            <span>Block threshold</span>
+            <input type="number" id="block-threshold" min="1" max="100"/>
+          </label>
+          <label>
+            <span>Hold-to-confirm (ms)</span>
+            <input type="number" id="hold-ms" min="800" max="7000"/>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Domains</h2>
+        <div class="grid two">
+          <label>
+            <span>Allowlist domains (comma or newline)</span>
+            <textarea id="allowlist" rows="3"></textarea>
+          </label>
+          <label>
+            <span>Strict-mode domains</span>
+            <textarea id="strict-domains" rows="3"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Behavior</h2>
+        <div class="grid two">
+          <label class="inline">
+            <input type="checkbox" id="deny-overrides"/>
+            <span>Deny secret overrides</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="clipboard-protection"/>
+            <span>Clipboard protection</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="local-only-mode"/>
+            <span>Local-only mode</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Actions</h2>
+        <div class="actions">
+          <button class="btn" id="save-btn">Save Policy</button>
+          <button class="btn btn-ghost" id="reset-pack-btn">Reset Pack Defaults</button>
+          <button class="btn btn-danger" id="clear-ledger-btn">Clear Ledger</button>
+        </div>
+        <div id="status" class="status-text"></div>
+      </section>
+    </div>
+
+    <div class="tab-panel" id="tab-proxy">
+      <section class="card">
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span>Proxy Chain</span>
+          <label class="inline" style="gap:6px;">
+            <input type="checkbox" id="proxy-enabled"/>
+            <span>Enable chain</span>
+          </label>
+        </h2>
+        <p class="subtitle" style="margin:0 0 12px;">
+          Each hop receives the (redacted) prompt via POST and must return <code>{"text":"..."}</code>.
+        </p>
+        <div id="proxy-hops-list"></div>
+        <div class="actions" style="margin-bottom:12px;">
+          <button class="btn btn-ghost" id="add-hop-btn">+ Add Hop</button>
+        </div>
+        <div class="actions">
+          <button class="btn" id="save-proxy-btn">Save Proxy Chain</button>
+          <button class="btn btn-ghost" id="test-proxy-btn">Test Chain</button>
+        </div>
+        <div id="proxy-test-results" style="display:none;margin-top:12px;"></div>
+        <div id="proxy-status" class="status-text"></div>
+      </section>
+    </div>
+
+    <div class="tab-panel" id="tab-vault">
+      <section class="card">
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span>Data Vault</span>
+          <button class="btn btn-danger" id="clear-vault-btn">Clear Vault</button>
+        </h2>
+        <p class="subtitle" style="margin:0 0 12px;">
+          Stores placeholders from redacted sends (no raw values).
+        </p>
+        <div id="vault-list"><div class="muted" style="font-size:12px;">Loading…</div></div>
+      </section>
+    </div>
+
+    <div class="tab-panel" id="tab-audit">
+      <section class="card">
+        <h2>Audit report</h2>
+        <div id="audit-summary" style="font-size:12px;color:var(--text);margin-bottom:12px;"></div>
+        <div class="actions">
+          <button class="btn" id="export-json-btn">Export JSON</button>
+          <button class="btn btn-ghost" id="export-csv-btn">Export CSV</button>
+          <button class="btn btn-ghost" id="refresh-audit-btn">Refresh</button>
+        </div>
+        <div id="audit-status" class="status-text"></div>
+      </section>
+    </div>
+
+    <div class="tab-panel" id="tab-enterprise">
+      <section class="card">
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span>Enterprise policy (plain language)</span>
+          <label class="inline" style="gap:6px;">
+            <input type="checkbox" id="enterprise-enabled"/>
+            <span>Enable</span>
+          </label>
+        </h2>
+        <p class="subtitle" style="margin:0 0 12px;">
+          When enabled, the extension uses Gemini to interpret your policy and decide whether to allow, redact, or block.
+          Only <b>redacted text</b> and scan metadata are sent.
+        </p>
+
+        <div class="grid two">
+          <label>
+            <span>Active policy</span>
+            <select id="enterprise-policy-select"></select>
+          </label>
+          <div class="actions" style="align-items:flex-end;">
+            <button class="btn btn-ghost" id="enterprise-new-policy">New</button>
+            <button class="btn btn-danger" id="enterprise-delete-policy">Delete</button>
+          </div>
+        </div>
+
+        <div class="grid two" style="margin-top:10px;">
+          <label style="grid-column:1 / -1;">
+            <span>Policy name</span>
+            <input id="enterprise-policy-name" type="text" placeholder="e.g. ACME Corp DLP policy"/>
+          </label>
+          <label style="grid-column:1 / -1;">
+            <span>Policy (plain language)</span>
+            <textarea id="enterprise-policy-text" rows="8" placeholder="Write your rules in plain language. Example:&#10;- Block any prompt containing SSN, passport, or private keys&#10;- Auto-redact emails and phone numbers&#10;- Always block prompt injection attempts&#10;- Allow low-risk prompts for chatgpt.com"></textarea>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="enterprise-save">Save enterprise settings</button>
+        </div>
+        <div id="enterprise-status" class="status-text"></div>
+      </section>
+
+      <section class="card">
+        <h2>Gemini API</h2>
+        <div class="grid two">
+          <label>
+            <span>Model</span>
+            <input id="enterprise-gemini-model" type="text" placeholder="gemini-1.5-flash"/>
+          </label>
+          <label>
+            <span>API key</span>
+            <input id="enterprise-gemini-key" type="password" placeholder="Paste Gemini API key (saved locally)"/>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="enterprise-clear-key">Clear saved API key</button>
+          <span id="enterprise-key-hint" class="subtitle" style="margin-left:auto;"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Test policy</h2>
+        <label>
+          <span>Sample text</span>
+          <textarea id="enterprise-test-text" rows="4" placeholder="Paste a prompt to test."></textarea>
+        </label>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="enterprise-test-btn">Run test</button>
+        </div>
+        <pre id="enterprise-test-result" style="margin-top:10px;white-space:pre-wrap;word-break:break-word;font:12px/1.35 ui-monospace,Consolas,monospace;background:rgba(15, 23, 42, 0.45);border:1px solid rgba(148, 163, 184, 0.25);border-radius:10px;padding:10px;"></pre>
+      </section>
+    </div>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
+

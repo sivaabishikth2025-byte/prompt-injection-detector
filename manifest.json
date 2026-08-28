@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Prompt Injection Detector",
+  "version": "1.0.0",
+  "description": "Chrome extension that detects prompt injection, redacts sensitive data, and protects your prompts before they reach AI chat sites — runs entirely in your browser.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://*/*", "http://*/*", "https://generativelanguage.googleapis.com/*"],
+  "storage": {
+    "managed_schema": "schema.json"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
