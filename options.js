@@ -67,7 +67,7 @@ const els = {
 init().catch(() => setStatus("Failed to load options.", true));
 
 async function init() {
-  const versionEl = document.getElementById("pf-version");
+  const versionEl = document.getElementById("pid-version");
   if (versionEl) versionEl.textContent = `v${chrome.runtime.getManifest().version}`;
 
   const [policyResp, packsResp] = await Promise.all([
@@ -597,27 +597,27 @@ async function loadAudit() {
     <div style="font-size:11px;color:#94a3b8;margin-top:8px;">Generated: ${escHtml(r.generatedAt)}</div>
   `;
 
-  window._pfAuditReport = r;
+  window._pidAuditReport = r;
 }
 
 els.refreshAuditBtn.addEventListener("click", loadAudit);
 
 els.exportJsonBtn.addEventListener("click", () => {
-  if (!window._pfAuditReport) {
+  if (!window._pidAuditReport) {
     setAuditStatus("Load report first.", true);
     return;
   }
-  const blob = new Blob([JSON.stringify(window._pfAuditReport, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(window._pidAuditReport, null, 2)], { type: "application/json" });
   downloadBlob(blob, `prompt-injection-detector-audit-${dateTag()}.json`);
   setAuditStatus("JSON exported.");
 });
 
 els.exportCsvBtn.addEventListener("click", () => {
-  if (!window._pfAuditReport) {
+  if (!window._pidAuditReport) {
     setAuditStatus("Load report first.", true);
     return;
   }
-  const entries = window._pfAuditReport.entries || [];
+  const entries = window._pidAuditReport.entries || [];
   const rows = [
     ["id", "ts", "domain", "action", "risk", "categories", "injectionDetected", "injectionSignals", "eventType", "note"],
     ...entries.map((e) => [

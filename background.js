@@ -99,7 +99,7 @@ chrome.runtime.onStartup?.addListener?.(() => {
 async function ensureRegisteredContentScript() {
   // Defensive: some environments may not support dynamic registration.
   if (!chrome?.scripting?.getRegisteredContentScripts || !chrome?.scripting?.registerContentScripts) return;
-  const id = "pf-main-content-script";
+  const id = "pid-main-content-script";
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
   if (Array.isArray(existing) && existing.length > 0) return;
   await chrome.scripting.registerContentScripts([

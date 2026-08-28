@@ -1,4 +1,4 @@
-const PF_STATE = {
+const PID_STATE = {
   lastFocusedEditable: null,
   bypassUntil: 0,
   inFlight: false,
@@ -21,9 +21,9 @@ const CHAT_INPUT_HINTS = ["prompt", "message", "chat", "ask", "assistant"];
 
 // Mark page for quick debugging (visible from DevTools console).
 try {
-  document.documentElement.dataset.pfActive = "1";
+  document.documentElement.dataset.pidActive = "1";
   const v = globalThis?.chrome?.runtime?.getManifest?.()?.version || "";
-  document.documentElement.dataset.pfVersion = String(v);
+  document.documentElement.dataset.pidVersion = String(v);
 } catch {
   // no-op
 }
@@ -32,7 +32,7 @@ document.addEventListener(
   "focusin",
   (e) => {
     const el = getEditableFromTarget(e.target);
-    if (el) PF_STATE.lastFocusedEditable = el;
+    if (el) PID_STATE.lastFocusedEditable = el;
   },
   true
 );
@@ -102,14 +102,14 @@ document.addEventListener(
 );
 
 function shouldHandle(e) {
-  return e.isTrusted && !PF_STATE.inFlight && Date.now() >= PF_STATE.bypassUntil;
+  return e.isTrusted && !PID_STATE.inFlight && Date.now() >= PID_STATE.bypassUntil;
 }
 
 // ─────────────────────────────────────────────
 //  Core send handler
 // ─────────────────────────────────────────────
 async function handleSend({ editable, originalText, triggerMeta }) {
-  PF_STATE.inFlight = true;
+  PID_STATE.inFlight = true;
   try {
     // Invisible CAPTCHA: micro-challenge when automation-like behavior is detected.
     const captchaOk = await maybeRequireHumanVerification(originalText);
@@ -284,13 +284,13 @@ async function handleSend({ editable, originalText, triggerMeta }) {
     toast("Prompt Injection Detector: fallback send.");
     await executeSend(editable, originalText, triggerMeta);
   } finally {
-    PF_STATE.inFlight = false;
+    PID_STATE.inFlight = false;
   }
 }
 
 async function handlePaste(event, editable, pastedText) {
-  PF_STATE.lastPasteAt = Date.now();
-  PF_STATE.pasteBurst = pruneWindow([...PF_STATE.pasteBurst, PF_STATE.lastPasteAt], 1200);
+  PID_STATE.lastPasteAt = Date.now();
+  PID_STATE.pasteBurst = pruneWindow([...PID_STATE.pasteBurst, PID_STATE.lastPasteAt], 1200);
 
   const resp = await sendMsg({
     type: "CLASSIFY_AND_REDACT",
@@ -323,12 +323,12 @@ async function storeVaultEntries(redactions) {
 //  Injection warning banner
 // ─────────────────────────────────────────────
 function showInjectionBanner(injectionResult) {
-  const existing = document.getElementById("pf-injection-banner");
+  const existing = document.getElementById("pid-injection-banner");
   if (existing) existing.remove();
 
   const signals = (injectionResult.signals || []).map((s) => s.signal.replace(/_/g, " ")).join(", ");
   const banner = document.createElement("div");
-  banner.id = "pf-injection-banner";
+  banner.id = "pid-injection-banner";
   banner.style.cssText = [
     "position:fixed",
     "top:0",
@@ -347,10 +347,10 @@ function showInjectionBanner(injectionResult) {
   ].join(";");
   banner.innerHTML = `
     <span><b>Prompt Injection Detected</b> — Signals: ${escHtml(signals)} (score: ${injectionResult.score}/100)</span>
-    <button id="pf-banner-close" style="border:0;background:rgba(255,255,255,0.2);color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600;">Dismiss</button>
+    <button id="pid-banner-close" style="border:0;background:rgba(255,255,255,0.2);color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600;">Dismiss</button>
   `;
   document.body.appendChild(banner);
-  banner.querySelector("#pf-banner-close").addEventListener("click", () => banner.remove());
+  banner.querySelector("#pid-banner-close").addEventListener("click", () => banner.remove());
   setTimeout(() => banner.remove(), 8000);
 }
 
@@ -430,32 +430,32 @@ function showBlockModal({ analysis, redactedText, redactions, canOverride, holdM
     const verifyHtml = step
       ? (() => {
           if (step.level === 2) {
-            return `<div id="pf-verify-zone" style="margin-bottom:10px;border:1px solid #93c5fd;background:#eff6ff;border-radius:12px;padding:10px;">
+            return `<div id="pid-verify-zone" style="margin-bottom:10px;border:1px solid #93c5fd;background:#eff6ff;border-radius:12px;padding:10px;">
               <div style="font-weight:700;font-size:12px;color:#1e3a8a;margin-bottom:6px;">Step-Up L2 verification</div>
               <div style="font-size:12px;color:#1e40af;margin-bottom:8px;">Enter the one-time code to unlock sending:</div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <span style="font-family:ui-monospace,monospace;font-weight:800;letter-spacing:0.08em;background:#dbeafe;color:#1e3a8a;padding:6px 10px;border-radius:10px;">${escHtml(
                   otpCode
                 )}</span>
-                <input id="pf-otp-input" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter code" style="padding:8px 10px;border:1px solid #93c5fd;border-radius:10px;min-width:180px;"/>
-                <span id="pf-verify-status" style="font-size:12px;color:#1e3a8a;"></span>
+                <input id="pid-otp-input" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter code" style="padding:8px 10px;border:1px solid #93c5fd;border-radius:10px;min-width:180px;"/>
+                <span id="pid-verify-status" style="font-size:12px;color:#1e3a8a;"></span>
               </div>
             </div>`;
           }
           // L1
-          return `<div id="pf-verify-zone" style="margin-bottom:10px;border:1px solid #fcd34d;background:#fffbeb;border-radius:12px;padding:10px;">
+          return `<div id="pid-verify-zone" style="margin-bottom:10px;border:1px solid #fcd34d;background:#fffbeb;border-radius:12px;padding:10px;">
             <div style="font-weight:700;font-size:12px;color:#92400e;margin-bottom:6px;">Step-Up L1 verification</div>
             <div style="font-size:12px;color:#78350f;margin-bottom:8px;">Hold for 1.5s or type <b>ALLOW</b> to unlock sending.</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <div style="flex:1;min-width:220px;">
                 <div style="height:8px;border-radius:999px;background:#fde68a;overflow:hidden;margin-bottom:8px;">
-                  <div id="pf-verify-hold-progress" style="width:0%;height:100%;background:#f59e0b;transition:width 0.05s linear;"></div>
+                  <div id="pid-verify-hold-progress" style="width:0%;height:100%;background:#f59e0b;transition:width 0.05s linear;"></div>
                 </div>
-                <button id="pf-verify-hold-btn" style="padding:8px 10px;border:0;border-radius:10px;background:#92400e;color:#fff;font-weight:700;cursor:pointer;">Hold to unlock</button>
+                <button id="pid-verify-hold-btn" style="padding:8px 10px;border:0;border-radius:10px;background:#92400e;color:#fff;font-weight:700;cursor:pointer;">Hold to unlock</button>
               </div>
               <div style="display:flex;gap:8px;align-items:center;">
-                <input id="pf-verify-input" placeholder="Type ALLOW" style="padding:8px 10px;border:1px solid #fcd34d;border-radius:10px;min-width:180px;"/>
-                <span id="pf-verify-status" style="font-size:12px;color:#92400e;"></span>
+                <input id="pid-verify-input" placeholder="Type ALLOW" style="padding:8px 10px;border:1px solid #fcd34d;border-radius:10px;min-width:180px;"/>
+                <span id="pid-verify-status" style="font-size:12px;color:#92400e;"></span>
               </div>
             </div>
           </div>`;
@@ -485,28 +485,28 @@ function showBlockModal({ analysis, redactedText, redactions, canOverride, holdM
           )}</pre>
         </div>
       </div>
-      <div id="pf-override-zone" style="display:none;margin-bottom:10px;border:1px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:10px;">
+      <div id="pid-override-zone" style="display:none;margin-bottom:10px;border:1px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:10px;">
         <div style="font-weight:600;font-size:12px;color:#92400e;margin-bottom:6px;">Step-up required</div>
         <div style="font-size:12px;color:#78350f;margin-bottom:8px;">Hold confirm for ${
           Math.round(holdMs / 100) / 10
         }s to send original.</div>
         <div style="height:8px;border-radius:999px;background:#fde68a;overflow:hidden;margin-bottom:8px;">
-          <div id="pf-hold-progress" style="width:0%;height:100%;background:#f59e0b;transition:width 0.05s linear;"></div>
+          <div id="pid-hold-progress" style="width:0%;height:100%;background:#f59e0b;transition:width 0.05s linear;"></div>
         </div>
-        <button id="pf-hold-btn" style="padding:8px 10px;border:0;border-radius:10px;background:#92400e;color:#fff;font-weight:600;cursor:pointer;">Hold to confirm override</button>
+        <button id="pid-hold-btn" style="padding:8px 10px;border:0;border-radius:10px;background:#92400e;color:#fff;font-weight:600;cursor:pointer;">Hold to confirm override</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
-        <button id="pf-cancel" style="padding:8px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;">Cancel</button>
-        <button id="pf-send-redacted" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#111827;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send redacted</button>
+        <button id="pid-cancel" style="padding:8px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;">Cancel</button>
+        <button id="pid-send-redacted" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#111827;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send redacted</button>
         ${
           hasRedactions
-            ? `<button id="pf-send-safe-sub" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#065f46;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send safe substituted</button>`
+            ? `<button id="pid-send-safe-sub" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#065f46;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send safe substituted</button>`
             : ""
         }
-        <button id="pf-send-rewrite" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#1d4ed8;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send + safe rewrite</button>
+        <button id="pid-send-rewrite" ${step ? "disabled" : ""} style="padding:8px 10px;border:0;background:#1d4ed8;color:#fff;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send + safe rewrite</button>
         ${
           canOverride
-            ? `<button id="pf-request-override" ${step ? "disabled" : ""} style="padding:8px 10px;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send original (step-up)</button>`
+            ? `<button id="pid-request-override" ${step ? "disabled" : ""} style="padding:8px 10px;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:10px;cursor:pointer;${step ? "opacity:0.55;cursor:not-allowed;" : ""}">Send original (step-up)</button>`
             : '<button disabled style="padding:8px 10px;border:1px solid #e2e8f0;background:#f8fafc;color:#94a3b8;border-radius:10px;">Override disabled</button>'
         }
       </div>
@@ -542,41 +542,41 @@ function showBlockModal({ analysis, redactedText, redactions, canOverride, holdM
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) done("CANCEL");
     });
-    card.querySelector("#pf-cancel")?.addEventListener("click", () => done("CANCEL"));
-    card.querySelector("#pf-send-redacted")?.addEventListener("click", () => (step && !verified ? null : done("SEND_REDACTED")));
-    card.querySelector("#pf-send-safe-sub")?.addEventListener("click", () => (step && !verified ? null : done("SEND_SAFE_SUBSTITUTED")));
-    card.querySelector("#pf-send-rewrite")?.addEventListener("click", () => (step && !verified ? null : done("SEND_REWRITE")));
+    card.querySelector("#pid-cancel")?.addEventListener("click", () => done("CANCEL"));
+    card.querySelector("#pid-send-redacted")?.addEventListener("click", () => (step && !verified ? null : done("SEND_REDACTED")));
+    card.querySelector("#pid-send-safe-sub")?.addEventListener("click", () => (step && !verified ? null : done("SEND_SAFE_SUBSTITUTED")));
+    card.querySelector("#pid-send-rewrite")?.addEventListener("click", () => (step && !verified ? null : done("SEND_REWRITE")));
 
-    const overrideBtn = card.querySelector("#pf-request-override");
-    const zone = card.querySelector("#pf-override-zone");
-    const holdBtn = card.querySelector("#pf-hold-btn");
-    const progress = card.querySelector("#pf-hold-progress");
+    const overrideBtn = card.querySelector("#pid-request-override");
+    const zone = card.querySelector("#pid-override-zone");
+    const holdBtn = card.querySelector("#pid-hold-btn");
+    const progress = card.querySelector("#pid-hold-progress");
 
     const sendBtns = [
-      card.querySelector("#pf-send-redacted"),
-      card.querySelector("#pf-send-safe-sub"),
-      card.querySelector("#pf-send-rewrite"),
+      card.querySelector("#pid-send-redacted"),
+      card.querySelector("#pid-send-safe-sub"),
+      card.querySelector("#pid-send-rewrite"),
       overrideBtn,
     ].filter(Boolean);
 
     const setVerified = () => {
       verified = true;
-      const status = card.querySelector("#pf-verify-status");
+      const status = card.querySelector("#pid-verify-status");
       if (status) status.textContent = "Unlocked ✓";
       for (const b of sendBtns) {
         b.disabled = false;
         b.style.opacity = "";
         b.style.cursor = "";
       }
-      const v = card.querySelector("#pf-verify-zone");
+      const v = card.querySelector("#pid-verify-zone");
       if (v) v.style.display = "none";
     };
 
     // Step-up verification handlers
     if (step) {
       if (step.level === 2) {
-        const input = card.querySelector("#pf-otp-input");
-        const status = card.querySelector("#pf-verify-status");
+        const input = card.querySelector("#pid-otp-input");
+        const status = card.querySelector("#pid-verify-status");
         if (input) {
           input.addEventListener("input", () => {
             const v = String(input.value || "").replace(/\s+/g, "");
@@ -587,10 +587,10 @@ function showBlockModal({ analysis, redactedText, redactions, canOverride, holdM
           });
         }
       } else {
-        const vInput = card.querySelector("#pf-verify-input");
-        const vHoldBtn = card.querySelector("#pf-verify-hold-btn");
-        const vProgress = card.querySelector("#pf-verify-hold-progress");
-        const vStatus = card.querySelector("#pf-verify-status");
+        const vInput = card.querySelector("#pid-verify-input");
+        const vHoldBtn = card.querySelector("#pid-verify-hold-btn");
+        const vProgress = card.querySelector("#pid-verify-hold-progress");
+        const vStatus = card.querySelector("#pid-verify-status");
 
         const resetVerifyHold = () => {
           if (verifyTimer) {
@@ -745,7 +745,7 @@ function looksLikeSend(btn) {
 }
 
 function locateBestEditable(anchor) {
-  if (PF_STATE.lastFocusedEditable && document.contains(PF_STATE.lastFocusedEditable)) return PF_STATE.lastFocusedEditable;
+  if (PID_STATE.lastFocusedEditable && document.contains(PID_STATE.lastFocusedEditable)) return PID_STATE.lastFocusedEditable;
   if (anchor instanceof Element) {
     const form = anchor.closest("form");
     if (form) {
@@ -777,7 +777,7 @@ function insertAtCursor(el, text) {
 async function executeSend(editable, text, triggerMeta) {
   setText(editable, text);
   await new Promise((r) => setTimeout(r, 16));
-  PF_STATE.bypassUntil = Date.now() + 700;
+  PID_STATE.bypassUntil = Date.now() + 700;
 
   if (triggerMeta.type === "button" && triggerMeta.button?.isConnected) {
     triggerMeta.button.click();
@@ -912,18 +912,18 @@ function generateCaptchaCode() {
 async function maybeRequireHumanVerification(text) {
   const now = Date.now();
 
-  PF_STATE.sendBurst = pruneWindow([...PF_STATE.sendBurst, now], 2500);
+  PID_STATE.sendBurst = pruneWindow([...PID_STATE.sendBurst, now], 2500);
   const h = String(fnv1a32(String(text || "").trim().slice(0, 2500)));
-  if (h === PF_STATE.lastSendHash && now - PF_STATE.lastSendAt < 1500) PF_STATE.repeatSendCount++;
-  else PF_STATE.repeatSendCount = 0;
-  PF_STATE.lastSendHash = h;
-  PF_STATE.lastSendAt = now;
+  if (h === PID_STATE.lastSendHash && now - PID_STATE.lastSendAt < 1500) PID_STATE.repeatSendCount++;
+  else PID_STATE.repeatSendCount = 0;
+  PID_STATE.lastSendHash = h;
+  PID_STATE.lastSendAt = now;
 
-  if (now < PF_STATE.humanVerifiedUntil) return true;
+  if (now < PID_STATE.humanVerifiedUntil) return true;
 
-  const fastAfterPaste = PF_STATE.lastPasteAt > 0 && now - PF_STATE.lastPasteAt < 300;
-  const burstSends = PF_STATE.sendBurst.length >= 5;
-  const repeats = PF_STATE.repeatSendCount >= 3;
+  const fastAfterPaste = PID_STATE.lastPasteAt > 0 && now - PID_STATE.lastPasteAt < 300;
+  const burstSends = PID_STATE.sendBurst.length >= 5;
+  const repeats = PID_STATE.repeatSendCount >= 3;
   const suspicious = burstSends || repeats || fastAfterPaste;
   if (!suspicious) return true;
 
@@ -937,7 +937,7 @@ async function maybeRequireHumanVerification(text) {
 
   const ok = await showMicroChallengeModal({ reason });
   if (ok) {
-    PF_STATE.humanVerifiedUntil = Date.now() + 60_000;
+    PID_STATE.humanVerifiedUntil = Date.now() + 60_000;
     toast("Human verification passed.");
     await appendResolution({
       action: "CAPTCHA_PASSED",
@@ -986,19 +986,19 @@ function showMicroChallengeModal({ reason }) {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <div style="flex:1;min-width:220px;">
             <div style="height:8px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:8px;">
-              <div id="pf-mc-progress" style="width:0%;height:100%;background:#111827;transition:width 0.05s linear;"></div>
+              <div id="pid-mc-progress" style="width:0%;height:100%;background:#111827;transition:width 0.05s linear;"></div>
       </div>
-            <button id="pf-mc-hold" style="padding:8px 10px;border:0;border-radius:10px;background:#111827;color:#fff;font-weight:700;cursor:pointer;">Hold to verify</button>
+            <button id="pid-mc-hold" style="padding:8px 10px;border:0;border-radius:10px;background:#111827;color:#fff;font-weight:700;cursor:pointer;">Hold to verify</button>
         </div>
           <span style="font-family:ui-monospace,monospace;font-weight:900;background:#e2e8f0;color:#111827;padding:6px 10px;border-radius:10px;letter-spacing:0.08em;">${escHtml(
             code
           )}</span>
-          <input id="pf-mc-input" placeholder="Type code" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;min-width:160px;"/>
+          <input id="pid-mc-input" placeholder="Type code" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;min-width:160px;"/>
         </div>
-        <div id="pf-mc-status" style="margin-top:8px;font-size:12px;color:#475569;"></div>
+        <div id="pid-mc-status" style="margin-top:8px;font-size:12px;color:#475569;"></div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button id="pf-mc-cancel" style="padding:8px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;">Cancel</button>
+        <button id="pid-mc-cancel" style="padding:8px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;">Cancel</button>
       </div>
     `;
 
@@ -1030,12 +1030,12 @@ function showMicroChallengeModal({ reason }) {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) done(false);
     });
-    card.querySelector("#pf-mc-cancel")?.addEventListener("click", () => done(false));
+    card.querySelector("#pid-mc-cancel")?.addEventListener("click", () => done(false));
 
-    const progress = card.querySelector("#pf-mc-progress");
-    const holdBtn = card.querySelector("#pf-mc-hold");
-    const input = card.querySelector("#pf-mc-input");
-    const status = card.querySelector("#pf-mc-status");
+    const progress = card.querySelector("#pid-mc-progress");
+    const holdBtn = card.querySelector("#pid-mc-hold");
+    const input = card.querySelector("#pid-mc-input");
+    const status = card.querySelector("#pid-mc-status");
 
     const resetHold = () => {
       if (timer) {
@@ -1130,12 +1130,12 @@ function getSafeSubstitution(category, raw) {
   const cat = String(category || "UNKNOWN").toUpperCase();
   const seed = fnv1a32(raw);
   const key = `${cat}:${seed}`;
-  if (PF_STATE.substitutionCache.has(key)) return PF_STATE.substitutionCache.get(key);
+  if (PID_STATE.substitutionCache.has(key)) return PID_STATE.substitutionCache.get(key);
 
-  PF_STATE.substitutionSerial[cat] = (PF_STATE.substitutionSerial[cat] || 0) + 1;
-  const idx = PF_STATE.substitutionSerial[cat];
+  PID_STATE.substitutionSerial[cat] = (PID_STATE.substitutionSerial[cat] || 0) + 1;
+  const idx = PID_STATE.substitutionSerial[cat];
   const value = generateFakeForCategory(cat, raw, idx, seed);
-  PF_STATE.substitutionCache.set(key, value);
+  PID_STATE.substitutionCache.set(key, value);
   return value;
 }
 
